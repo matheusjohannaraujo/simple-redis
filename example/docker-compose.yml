@@ -1,0 +1,47 @@
+version: '3.3'
+services:
+  redis:
+    image: bitnami/redis:7.2
+    hostname: redis
+    restart: always
+    #command: /opt/bitnami/scripts/redis/run.sh --maxmemory 100mb
+    ports:
+      - 6379:6379
+    volumes:
+      - redis-volume1:/bitnami/redis/data
+    environment:
+      #- ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_PORT_NUMBER=6379
+      - REDIS_PASSWORD=password
+      #- REDIS_USERNAME=root
+      #- REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL,CONFIG
+      #- REDIS_IO_THREADS=4
+      #- REDIS_IO_THREADS_DO_READS=true
+      #- REDIS_AOF_ENABLED=no
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    hostname: redis-commander
+    restart: always
+    links:
+      - redis
+    ports:
+      - 8081:8081 # WEB
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=password
+      #- REDIS_USERNAME=user
+      #- HTTP_USER=user
+      #- HTTP_PASSWORD=password
+    depends_on:
+      - redis
+
+volumes:
+  redis-volume1:
+    driver: local
+
+#networks:
+#  default:
+#    external: true
+#    name: default-network

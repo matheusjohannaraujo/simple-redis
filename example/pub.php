@@ -1,19 +1,31 @@
 <?php
 
-require_once "vendor/autoload.php";
+/*
+Always run the SUB process before the PUB, as the subscriber listens for messages sent by the publisher.
+*/
 
-use Lib\SimpleRedis;
+require_once "../vendor/autoload.php";
 
-$sr = new SimpleRedis;
-$sr->config();
-$sr->open();
+use MJohann\Packlib\SimpleRedis;
 
-for ($i = 1; $i <= 10; $i++) { 
-    $sr->pub("channel", "Matheus " . $i);
+// Instantiate and configure Redis connection
+$redis = new SimpleRedis();
+$redis->config();
+$redis->open();
+
+// Publish 10 messages to the "channel"
+for ($i = 1; $i <= 10; $i++) {
+    $message = "Test " . $i;
+    $redis->pub("channel", $message);
+    echo "Published: $message\n";
 }
 
+// Optional delay to allow time for subscribers to process the messages
 sleep(3);
 
-$sr->pub("channel_break", "channel_break");
+// Publish a special message to signal the end of communication
+$redis->pub("channel_break", "channel_break");
+echo "Published: channel_break\n";
 
-$sr->close();
+// Close the Redis connection
+$redis->close();

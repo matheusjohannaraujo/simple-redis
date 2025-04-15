@@ -1,0 +1,21 @@
+{
+    "name": "mjohann/simple-redis",
+    "description": "Simple Redis is a PHP class that provides a practical and reusable abstraction for working with Redis. It allows you to easily create connections and perform common operations such as set, get, del, list, pub, sub and many others, without worrying about the underlying configuration complexity.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "M. Johann",
+            "email": "matheusjohannaraujo+mjohannpacklib@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^7.0|^8.0",
+        "predis/predis": "^2.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "MJohann\\Packlib\\": "src/"
+        }
+    }
+}

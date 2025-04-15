@@ -1,13 +1,22 @@
 <?php
 
-namespace Lib;
+/*
+	GitHub: https://github.com/matheusjohannaraujo/simple-redis
+	Country: Brasil
+	State: Pernambuco
+	Developer: Matheus Johann Araujo
+	Date: 2025-04-15
+*/
+
+namespace MJohann\Packlib;
 
 use Predis\Client;
 
-class SimpleRedis {
+class SimpleRedis
+{
 
     private static $host = null;
-    private static $port = null;    
+    private static $port = null;
     private static $password = null;
     private static $username = null;
     private static $scheme = null;
@@ -63,7 +72,7 @@ class SimpleRedis {
     {
         if (self::$connection !== null) {
             if ($time > 0) {
-                return self::$connection->setex($key, $time, $value);//seg
+                return self::$connection->setex($key, $time, $value); //seg
                 //return self::$connection->psetex($key, $time, $value);//ms
             } else {
                 return self::$connection->set($key, $value);
@@ -101,13 +110,13 @@ class SimpleRedis {
     {
         if (self::$connection !== null) {
             $this->pubsub = self::$connection->pubSubLoop();
-            $this->callbacks["channel_break"] = function(){};
+            $this->callbacks["channel_break"] = function () {};
             $this->pubsub->subscribe(array_keys($this->callbacks));
             foreach ($this->pubsub as $message) {
                 if ($this->debug) {
                     echo  "Kind: ", $message->kind, " | Channel: ", $message->channel, " | Payload: ", $message->payload, PHP_EOL;
                 }
-                if ($message->kind === "message" && in_array($message->channel, array_keys($this->callbacks))) { 
+                if ($message->kind === "message" && in_array($message->channel, array_keys($this->callbacks))) {
                     $this->callbacks[$message->channel]($message->payload, $message->channel);
                 }
                 if ($message->kind === "message" && $message->channel === "channel_break" && $message->payload === "channel_break") {
@@ -124,7 +133,7 @@ class SimpleRedis {
         return null;
     }
 
-    public function listPush($message, string $list = null)
+    public function listPush($message, ?string $list = null)
     {
         if ($list === null) {
             $list = $this->list ?? md5(uniqid());
@@ -136,7 +145,7 @@ class SimpleRedis {
         return null;
     }
 
-    public function listPop(string $list = null)
+    public function listPop(?string $list = null)
     {
         if ($list === null) {
             $list = $this->list;
@@ -147,7 +156,7 @@ class SimpleRedis {
         }
     }
 
-    public function listSize(string $list = null)
+    public function listSize(?string $list = null)
     {
         if ($list === null) {
             $list = $this->list;
@@ -159,7 +168,7 @@ class SimpleRedis {
         return -1;
     }
 
-    public function listIndex(int $index, string $list = null)
+    public function listIndex(int $index, ?string $list = null)
     {
         if ($list === null) {
             $list = $this->list;
@@ -171,7 +180,7 @@ class SimpleRedis {
         return null;
     }
 
-    public function listAll(string $list = null, bool $reverse = true)
+    public function listAll(?string $list = null, bool $reverse = true)
     {
         if ($list === null) {
             $list = $this->list;
@@ -185,5 +194,4 @@ class SimpleRedis {
             return $array;
         }
     }
-
 }
