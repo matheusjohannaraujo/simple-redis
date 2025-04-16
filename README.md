@@ -17,7 +17,7 @@ composer require mjohann/simple-redis
 ## 🚀 Features
 
 - SimpleRedis uses [`predis/predis`](https://packagist.org/packages/predis/predis) as a dependency
-- Supported formats:
+- Supported:
   - `set`
   - `get`
   - `del`
@@ -93,6 +93,7 @@ simple-redis/
 ├── src/
 │   └── SimpleRedis.php
 ├── example/
+│   └── docker-compose.yml
 │   └── script.php
 │   └── sub.php
 │   └── pub.php
