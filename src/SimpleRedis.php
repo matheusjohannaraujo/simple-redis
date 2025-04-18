@@ -10,6 +10,10 @@
 
 namespace MJohann\Packlib;
 
+if (!class_exists(\Predis\Client::class)) {
+    throw new \RuntimeException('Predis is not installed. Please run `composer require predis/predis`.');
+}
+
 class SimpleRedis
 {
 
@@ -138,12 +142,12 @@ class SimpleRedis
      *
      * @param string $channel
      * @param string $message
-     * @return bool
+     * @return int|false
      */
-    public function pub(string $channel, string $message): bool
+    public function pub(string $channel, string $message): int|false
     {
         if (self::$redis !== null) {
-            return self::$redis?->publish($channel, $message) === 1;
+            return self::$redis?->publish($channel, $message);
         }
         return false;
     }
@@ -294,6 +298,7 @@ class SimpleRedis
      */
     public function listRange(string $list, int $start = 0, int $stop = -1, bool $reverse = true): array
     {
+        $array = [];
         if (self::$redis !== null) {
             $array = self::$redis?->lrange($list, $start, $stop) ?? [];
         }
