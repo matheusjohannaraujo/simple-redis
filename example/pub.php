@@ -16,16 +16,16 @@ $redis->open();
 // Publish 10 messages to the "channel"
 for ($i = 1; $i <= 10; $i++) {
     $message = "Test " . $i;
-    $redis->pub("channel", $message);
-    echo "Published: $message\n";
+    $status = $redis->pub("channel", $message);
+    echo "Message: ", $message, " | ", ($status ? "Published" : "Not published"), PHP_EOL;
 }
 
 // Optional delay to allow time for subscribers to process the messages
-sleep(3);
+sleep(5);
 
 // Publish a special message to signal the end of communication
-$redis->pub("channel_break", "channel_break");
-echo "Published: channel_break\n";
+$status = $redis->pub("channel_break", "channel_break");
+echo "Message: channel_break | ", ($status ? "Published" : "Not published"), PHP_EOL;
 
 // Close the Redis connection
 $redis->close();

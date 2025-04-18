@@ -5,12 +5,10 @@
 	Country: Brasil
 	State: Pernambuco
 	Developer: Matheus Johann Araujo
-	Date: 2025-04-17
+	Date: 2025-04-18
 */
 
 namespace MJohann\Packlib;
-
-use Predis\Client;
 
 class SimpleRedis
 {
@@ -26,7 +24,7 @@ class SimpleRedis
     private $callbacks = [];
     private $pubsub = null;
 
-    public static function config(string $host = "localhost", string $port = "6379", string $password = "password", string $username = "", string $scheme = "tcp", int $read_write_timeout = 0)
+    public static function config(string $host = "localhost", string $port = "6379", string $password = "password", string $username = "", string $scheme = "tcp", int $read_write_timeout = 0): void
     {
         self::$host = $host;
         self::$port = $port;
@@ -36,11 +34,11 @@ class SimpleRedis
         self::$read_write_timeout = $read_write_timeout;
     }
 
-    public static function open()
+    public static function open(): ?\Predis\Client
     {
         if (self::$redis === null) {
             try {
-                self::$redis = new Client([
+                self::$redis = new \Predis\Client([
                     'scheme' => self::$scheme,
                     'host' => self::$host,
                     'port' => self::$port,
@@ -55,15 +53,14 @@ class SimpleRedis
         return self::$redis;
     }
 
-    public static function close()
+    public static function close(): void
     {
         if (self::$redis !== null) {
             self::$redis = null;
         }
-        return self::$redis;
     }
 
-    public function get(string $key)
+    public function get(string $key): mixed
     {
         if (self::$redis !== null) {
             return self::$redis?->get($key);
@@ -94,15 +91,15 @@ class SimpleRedis
         return false;
     }
 
-    public function pub(string $channel, string $message)
+    public function pub(string $channel, string $message): bool
     {
         if (self::$redis !== null) {
-            return self::$redis?->publish($channel, $message);
+            return self::$redis?->publish($channel, $message) === 1;
         }
-        return null;
+        return false;
     }
 
-    public function sub(string $channel, callable $callback)
+    public function sub(string $channel, callable $callback): ?array
     {
         if (self::$redis !== null) {
             return [$channel => $this->callbacks[$channel] = $callback];
@@ -110,7 +107,7 @@ class SimpleRedis
         return null;
     }
 
-    public function waitCallbacks(int $sleep = 0)
+    public function waitCallbacks(int $sleep = 0): bool
     {
         if (self::$redis !== null) {
             $this->pubsub = self::$redis->pubSubLoop();
@@ -133,8 +130,9 @@ class SimpleRedis
                 }
             }
             unset($this->pubsub);
+            return true;
         }
-        return null;
+        return false;
     }
 
     private function listMode(string $mode): string
@@ -173,15 +171,15 @@ class SimpleRedis
         return null;
     }
 
-    public function listSize(string $list)
+    public function listSize(string $list): int
     {
         if (self::$redis !== null) {
-            return self::$redis?->llen($list);
+            return self::$redis?->llen($list) ?? -1;
         }
         return -1;
     }
 
-    public function listIndex(string $list, int $index)
+    public function listIndex(string $list, int $index): mixed
     {
         if (self::$redis !== null) {
             return self::$redis?->lindex($list, $index);
