@@ -5,7 +5,7 @@
 	Country: Brasil
 	State: Pernambuco
 	Developer: Matheus Johann Araujo
-	Date: 2025-04-15
+	Date: 2025-04-17
 */
 
 namespace MJohann\Packlib;
@@ -21,11 +21,10 @@ class SimpleRedis
     private static $username = null;
     private static $scheme = null;
     private static $read_write_timeout = null;
-    public static $connection = null;
+    public static $redis = null;
     public $debug = false;
     private $callbacks = [];
     private $pubsub = null;
-    private $list = null;
 
     public static function config(string $host = "localhost", string $port = "6379", string $password = "password", string $username = "", string $scheme = "tcp", int $read_write_timeout = 0)
     {
@@ -39,68 +38,73 @@ class SimpleRedis
 
     public static function open()
     {
-        if (self::$connection === null) {
-            self::$connection = new Client([
-                'scheme' => self::$scheme,
-                'host' => self::$host,
-                'port' => self::$port,
-                'username' => self::$username,
-                'password' => self::$password,
-                'read_write_timeout' => self::$read_write_timeout
-            ]);
+        if (self::$redis === null) {
+            try {
+                self::$redis = new Client([
+                    'scheme' => self::$scheme,
+                    'host' => self::$host,
+                    'port' => self::$port,
+                    'username' => self::$username,
+                    'password' => self::$password,
+                    'read_write_timeout' => self::$read_write_timeout
+                ]);
+            } catch (\Throwable $th) {
+                throw new \RuntimeException('Unable to connect to Redis: ' . $th->getMessage());
+            }
         }
-        return self::$connection;
+        return self::$redis;
     }
 
     public static function close()
     {
-        if (self::$connection !== null) {
-            self::$connection = null;
+        if (self::$redis !== null) {
+            self::$redis = null;
         }
-        return self::$connection;
+        return self::$redis;
     }
 
     public function get(string $key)
     {
-        if (self::$connection !== null) {
-            return self::$connection->get($key);
+        if (self::$redis !== null) {
+            return self::$redis?->get($key);
         }
         return null;
     }
 
-    public function set(string $key, $value, int $time = 0)
+    public function set(string $key, $value, int $time = 0): bool
     {
-        if (self::$connection !== null) {
+        if (self::$redis !== null) {
             if ($time > 0) {
-                return self::$connection->setex($key, $time, $value); //seg
-                //return self::$connection->psetex($key, $time, $value);//ms
+                self::$redis?->setex($key, $time, $value); //seg
+                //return self::$redis->psetex($key, $time, $value);//ms
             } else {
-                return self::$connection->set($key, $value);
+                self::$redis->set($key, $value);
             }
-            return self::$connection->get($key);
+            return true;
         }
         return false;
     }
 
-    public function del(string $key)
+    public function del(string $key): bool
     {
-        if (self::$connection !== null) {
-            return self::$connection->del($key);
+        if (self::$redis !== null) {
+            self::$redis?->del($key);
+            return true;
         }
-        return null;
+        return false;
     }
 
     public function pub(string $channel, string $message)
     {
-        if (self::$connection !== null) {
-            return self::$connection->publish($channel, $message);
+        if (self::$redis !== null) {
+            return self::$redis?->publish($channel, $message);
         }
         return null;
     }
 
     public function sub(string $channel, callable $callback)
     {
-        if (self::$connection !== null) {
+        if (self::$redis !== null) {
             return [$channel => $this->callbacks[$channel] = $callback];
         }
         return null;
@@ -108,8 +112,8 @@ class SimpleRedis
 
     public function waitCallbacks(int $sleep = 0)
     {
-        if (self::$connection !== null) {
-            $this->pubsub = self::$connection->pubSubLoop();
+        if (self::$redis !== null) {
+            $this->pubsub = self::$redis->pubSubLoop();
             $this->callbacks["channel_break"] = function () {};
             $this->pubsub->subscribe(array_keys($this->callbacks));
             foreach ($this->pubsub as $message) {
@@ -133,65 +137,97 @@ class SimpleRedis
         return null;
     }
 
-    public function listPush($message, ?string $list = null)
+    private function listMode(string $mode): string
     {
-        if ($list === null) {
-            $list = $this->list ?? md5(uniqid());
+        $mode = strtolower($mode);
+        if ($mode !== "l" && $mode !== "r") {
+            $mode = "l";
         }
-        if (self::$connection !== null) {
-            $this->list = $list;
-            return self::$connection->lpush($list, $message);
+        return $mode;
+    }
+
+    public function listPush(string $list, mixed $message, string $mode = "l"): bool
+    {
+        $mode = $this->listMode($mode);
+        if (self::$redis !== null && $mode !== null) {
+            if ($mode === "l") {
+                self::$redis?->lpush($list, $message);
+            } else if ($mode === "r") {
+                self::$redis?->rpush($list, $message);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public function listPop(string $list, string $mode = "l"): mixed
+    {
+        $mode = $this->listMode($mode);
+        if (self::$redis !== null && $mode !== null) {
+            if ($mode === "l") {
+                return self::$redis?->lpop($list);
+            } else if ($mode === "r") {
+                return self::$redis?->rpop($list);
+            }
         }
         return null;
     }
 
-    public function listPop(?string $list = null)
+    public function listSize(string $list)
     {
-        if ($list === null) {
-            $list = $this->list;
-        }
-        if (self::$connection !== null && $list !== null) {
-            $this->list = $list;
-            return self::$connection->lpop($list);
-        }
-    }
-
-    public function listSize(?string $list = null)
-    {
-        if ($list === null) {
-            $list = $this->list;
-        }
-        if (self::$connection !== null && $list !== null) {
-            $this->list = $list;
-            return self::$connection->llen($list);
+        if (self::$redis !== null) {
+            return self::$redis?->llen($list);
         }
         return -1;
     }
 
-    public function listIndex(int $index, ?string $list = null)
+    public function listIndex(string $list, int $index)
     {
-        if ($list === null) {
-            $list = $this->list;
-        }
-        if (self::$connection !== null && $list !== null) {
-            $this->list = $list;
-            return self::$connection->lindex($list, $index);
+        if (self::$redis !== null) {
+            return self::$redis?->lindex($list, $index);
         }
         return null;
     }
 
-    public function listAll(?string $list = null, bool $reverse = true)
+    public function listRange(string $list, int $start = 0, int $stop = -1, bool $reverse = true): array
     {
-        if ($list === null) {
-            $list = $this->list;
+        if (self::$redis !== null) {
+            $array = self::$redis?->lrange($list, $start, $stop) ?? [];
         }
-        if (self::$connection !== null && $list !== null) {
-            $this->list = $list;
-            $array = self::$connection->lrange($list, 0, -1) ?? [];
-            if ($reverse) {
-                $array = array_reverse($array);
-            }
-            return $array;
+        return $reverse ? array_reverse($array) : $array;
+    }
+
+    public function listAll(string $list, bool $reverse = true)
+    {
+        if (self::$redis !== null) {
+            return $this->listRange($list, 0, -1, $reverse);
         }
+        return [];
+    }
+
+    public function listTrim(string $list, int $start, int $stop): bool
+    {
+        if (self::$redis !== null) {
+            self::$redis?->ltrim($list, $start, $stop);
+            return true;
+        }
+        return false;
+    }
+
+    public function listRemove(string $list, mixed $value, int $count = 0): int
+    {
+        if (self::$redis !== null) {
+            return self::$redis?->lrem($list, $count, $value) ?? 0;
+        }
+        return 0;
+    }
+
+    public function listSet(string $list, int $index, mixed $value): bool
+    {
+        if (self::$redis !== null) {
+            self::$redis?->lset($list, $index, $value);
+            return true;
+        }
+        return false;
     }
 }
