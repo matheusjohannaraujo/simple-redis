@@ -24,6 +24,17 @@ class SimpleRedis
     private $callbacks = [];
     private $pubsub = null;
 
+    /**
+     * Configures Redis connection parameters.
+     *
+     * @param string $host
+     * @param string $port
+     * @param string $password
+     * @param string $username
+     * @param string $scheme
+     * @param int $read_write_timeout
+     * @return void
+     */
     public static function config(string $host = "localhost", string $port = "6379", string $password = "password", string $username = "", string $scheme = "tcp", int $read_write_timeout = 0): void
     {
         self::$host = $host;
@@ -34,6 +45,11 @@ class SimpleRedis
         self::$read_write_timeout = $read_write_timeout;
     }
 
+    /**
+     * Opens a new Redis connection using Predis.
+     *
+     * @return \Predis\Client|null
+     */
     public static function open(): ?\Predis\Client
     {
         if (self::$redis === null) {
@@ -53,6 +69,12 @@ class SimpleRedis
         return self::$redis;
     }
 
+
+    /**
+     * Closes the Redis connection.
+     *
+     * @return void
+     */
     public static function close(): void
     {
         if (self::$redis !== null) {
@@ -60,6 +82,12 @@ class SimpleRedis
         }
     }
 
+    /**
+     * Gets a value from Redis by key.
+     *
+     * @param string $key
+     * @return mixed|null
+     */
     public function get(string $key): mixed
     {
         if (self::$redis !== null) {
@@ -68,6 +96,14 @@ class SimpleRedis
         return null;
     }
 
+    /**
+     * Sets a value in Redis by key with optional expiration time.
+     *
+     * @param string $key
+     * @param mixed $value
+     * @param int $time Expiration time in seconds
+     * @return bool
+     */
     public function set(string $key, $value, int $time = 0): bool
     {
         if (self::$redis !== null) {
@@ -82,6 +118,12 @@ class SimpleRedis
         return false;
     }
 
+    /**
+     * Deletes a key from Redis.
+     *
+     * @param string $key
+     * @return bool
+     */
     public function del(string $key): bool
     {
         if (self::$redis !== null) {
@@ -91,6 +133,13 @@ class SimpleRedis
         return false;
     }
 
+    /**
+     * Publishes a message to a Redis channel.
+     *
+     * @param string $channel
+     * @param string $message
+     * @return bool
+     */
     public function pub(string $channel, string $message): bool
     {
         if (self::$redis !== null) {
@@ -99,6 +148,13 @@ class SimpleRedis
         return false;
     }
 
+    /**
+     * Subscribes to a Redis channel and assigns a callback.
+     *
+     * @param string $channel
+     * @param callable $callback
+     * @return array|null
+     */
     public function sub(string $channel, callable $callback): ?array
     {
         if (self::$redis !== null) {
@@ -107,6 +163,12 @@ class SimpleRedis
         return null;
     }
 
+    /**
+     * Waits and listens for incoming messages on subscribed channels.
+     *
+     * @param int $sleep Microseconds to sleep between iterations
+     * @return bool
+     */
     public function waitCallbacks(int $sleep = 0): bool
     {
         if (self::$redis !== null) {
@@ -135,6 +197,12 @@ class SimpleRedis
         return false;
     }
 
+    /**
+     * Normalizes list push/pop mode to 'l' (left) or 'r' (right).
+     *
+     * @param string $mode
+     * @return string
+     */
     private function listMode(string $mode): string
     {
         $mode = strtolower($mode);
@@ -144,6 +212,14 @@ class SimpleRedis
         return $mode;
     }
 
+    /**
+     * Pushes a value to a Redis list from the left or right.
+     *
+     * @param string $list
+     * @param mixed $message
+     * @param string $mode 'l' or 'r'
+     * @return bool
+     */
     public function listPush(string $list, mixed $message, string $mode = "l"): bool
     {
         $mode = $this->listMode($mode);
@@ -158,6 +234,13 @@ class SimpleRedis
         return false;
     }
 
+    /**
+     * Pops a value from a Redis list from the left or right.
+     *
+     * @param string $list
+     * @param string $mode 'l' or 'r'
+     * @return mixed|null
+     */
     public function listPop(string $list, string $mode = "l"): mixed
     {
         $mode = $this->listMode($mode);
@@ -171,6 +254,12 @@ class SimpleRedis
         return null;
     }
 
+    /**
+     * Returns the size of a Redis list.
+     *
+     * @param string $list
+     * @return int
+     */
     public function listSize(string $list): int
     {
         if (self::$redis !== null) {
@@ -179,6 +268,13 @@ class SimpleRedis
         return -1;
     }
 
+    /**
+     * Retrieves a value at a specific index from a Redis list.
+     *
+     * @param string $list
+     * @param int $index
+     * @return mixed|null
+     */
     public function listIndex(string $list, int $index): mixed
     {
         if (self::$redis !== null) {
@@ -187,6 +283,15 @@ class SimpleRedis
         return null;
     }
 
+    /**
+     * Retrieves a range of elements from a Redis list.
+     *
+     * @param string $list
+     * @param int $start
+     * @param int $stop
+     * @param bool $reverse If true, reverses the list
+     * @return array
+     */
     public function listRange(string $list, int $start = 0, int $stop = -1, bool $reverse = true): array
     {
         if (self::$redis !== null) {
@@ -195,6 +300,13 @@ class SimpleRedis
         return $reverse ? array_reverse($array) : $array;
     }
 
+    /**
+     * Retrieves all elements from a Redis list.
+     *
+     * @param string $list
+     * @param bool $reverse If true, reverses the list
+     * @return array
+     */
     public function listAll(string $list, bool $reverse = true)
     {
         if (self::$redis !== null) {
@@ -203,6 +315,14 @@ class SimpleRedis
         return [];
     }
 
+    /**
+     * Trims a Redis list to a specific range.
+     *
+     * @param string $list
+     * @param int $start
+     * @param int $stop
+     * @return bool
+     */
     public function listTrim(string $list, int $start, int $stop): bool
     {
         if (self::$redis !== null) {
@@ -212,6 +332,14 @@ class SimpleRedis
         return false;
     }
 
+    /**
+     * Removes occurrences of a value from a Redis list.
+     *
+     * @param string $list
+     * @param mixed $value
+     * @param int $count Number of occurrences to remove (0 for all)
+     * @return int Number of removed items
+     */
     public function listRemove(string $list, mixed $value, int $count = 0): int
     {
         if (self::$redis !== null) {
@@ -220,6 +348,14 @@ class SimpleRedis
         return 0;
     }
 
+    /**
+     * Sets a value at a specific index in a Redis list.
+     *
+     * @param string $list
+     * @param int $index
+     * @param mixed $value
+     * @return bool
+     */
     public function listSet(string $list, int $index, mixed $value): bool
     {
         if (self::$redis !== null) {
