@@ -10,7 +10,7 @@
 
 namespace MJohann\Packlib;
 
-if (!class_exists(\Predis\Client::class)) {
+if (!class_exists('Predis\Client')) {
     throw new \RuntimeException('Predis is not installed. Please run `composer require predis/predis`.');
 }
 
@@ -32,14 +32,14 @@ class SimpleRedis
      * Configures Redis connection parameters.
      *
      * @param string $host
-     * @param string $port
+     * @param int $port
      * @param string $password
      * @param string $username
      * @param string $scheme
      * @param int $read_write_timeout
      * @return void
      */
-    public static function config(string $host = "localhost", string $port = "6379", string $password = "password", string $username = "", string $scheme = "tcp", int $read_write_timeout = 0): void
+    public static function config(string $host = "localhost", int $port = 6379, string $password = "password", string $username = "", string $scheme = "tcp", int $read_write_timeout = 0): void
     {
         self::$host = $host;
         self::$port = $port;
@@ -57,6 +57,9 @@ class SimpleRedis
     public static function open(): ?\Predis\Client
     {
         if (self::$redis === null) {
+            if (self::$host === null || self::$port === null) {
+                throw new \RuntimeException("Redis configuration not set. Please call config() first.");
+            }
             try {
                 self::$redis = new \Predis\Client([
                     'scheme' => self::$scheme,
@@ -115,7 +118,7 @@ class SimpleRedis
                 self::$redis?->setex($key, $time, $value); //seg
                 //return self::$redis->psetex($key, $time, $value);//ms
             } else {
-                self::$redis->set($key, $value);
+                self::$redis?->set($key, $value);
             }
             return true;
         }
@@ -312,7 +315,7 @@ class SimpleRedis
      * @param bool $reverse If true, reverses the list
      * @return array
      */
-    public function listAll(string $list, bool $reverse = true)
+    public function listAll(string $list, bool $reverse = true): array
     {
         if (self::$redis !== null) {
             return $this->listRange($list, 0, -1, $reverse);
