@@ -10,7 +10,6 @@ use MJohann\Packlib\SimpleRedis;
 
 // Instantiate and configure Redis connection
 $redis = new SimpleRedis();
-$redis->config();
 $redis->open();
 
 // Subscribe to the "channel" and define a callback function 

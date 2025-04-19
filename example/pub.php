@@ -10,7 +10,6 @@ use MJohann\Packlib\SimpleRedis;
 
 // Instantiate and configure Redis connection
 $redis = new SimpleRedis();
-$redis->config();
 $redis->open();
 
 // Publish 10 messages to the "channel"
