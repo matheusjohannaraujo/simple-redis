@@ -5,7 +5,7 @@
 	Country: Brasil
 	State: Pernambuco
 	Developer: Matheus Johann Araujo
-	Date: 2025-04-18
+	Date: 2025-04-19
 */
 
 namespace MJohann\Packlib;
@@ -17,16 +17,16 @@ if (!class_exists('Predis\Client')) {
 class SimpleRedis
 {
 
-    private static $host = null;
-    private static $port = null;
-    private static $password = null;
-    private static $username = null;
-    private static $scheme = null;
-    private static $read_write_timeout = null;
-    public static $redis = null;
-    public $debug = false;
-    private $callbacks = [];
+    private ?string $host = null;
+    private ?int $port = null;
+    private ?string $password = null;
+    private ?string $username = null;
+    private ?string $scheme = null;
+    private ?int $read_write_timeout = null;
+    private array $callbacks = [];
+    private ?\Predis\Client $redis = null;
     private $pubsub = null;
+    public bool $debug = false;
 
     /**
      * Configures Redis connection parameters.
@@ -39,14 +39,14 @@ class SimpleRedis
      * @param int $read_write_timeout
      * @return void
      */
-    public static function config(string $host = "localhost", int $port = 6379, string $password = "password", string $username = "", string $scheme = "tcp", int $read_write_timeout = 0): void
+    public function config(string $host = "localhost", int $port = 6379, string $password = "password", string $username = "", string $scheme = "tcp", int $read_write_timeout = 0): void
     {
-        self::$host = $host;
-        self::$port = $port;
-        self::$password = $password;
-        self::$username = $username;
-        self::$scheme = $scheme;
-        self::$read_write_timeout = $read_write_timeout;
+        $this->host = $host;
+        $this->port = $port;
+        $this->password = $password;
+        $this->username = $username;
+        $this->scheme = $scheme;
+        $this->read_write_timeout = $read_write_timeout;
     }
 
     /**
@@ -54,26 +54,26 @@ class SimpleRedis
      *
      * @return \Predis\Client|null
      */
-    public static function open(): ?\Predis\Client
+    public function open(): ?\Predis\Client
     {
-        if (self::$redis === null) {
-            if (self::$host === null || self::$port === null) {
+        if ($this->redis === null) {
+            if ($this->host === null || $this->port === null) {
                 throw new \RuntimeException("Redis configuration not set. Please call config() first.");
             }
             try {
-                self::$redis = new \Predis\Client([
-                    'scheme' => self::$scheme,
-                    'host' => self::$host,
-                    'port' => self::$port,
-                    'username' => self::$username,
-                    'password' => self::$password,
-                    'read_write_timeout' => self::$read_write_timeout
+                $this->redis = new \Predis\Client([
+                    'scheme' => $this->scheme,
+                    'host' => $this->host,
+                    'port' => $this->port,
+                    'username' => $this->username,
+                    'password' => $this->password,
+                    'read_write_timeout' => $this->read_write_timeout
                 ]);
             } catch (\Throwable $th) {
                 throw new \RuntimeException('Unable to connect to Redis: ' . $th->getMessage());
             }
         }
-        return self::$redis;
+        return $this->redis;
     }
 
 
@@ -82,10 +82,11 @@ class SimpleRedis
      *
      * @return void
      */
-    public static function close(): void
+    public function close(): void
     {
-        if (self::$redis !== null) {
-            self::$redis = null;
+        if ($this->redis !== null) {
+            unset($this->redis);
+            $this->redis = null;
         }
     }
 
@@ -97,8 +98,8 @@ class SimpleRedis
      */
     public function get(string $key): mixed
     {
-        if (self::$redis !== null) {
-            return self::$redis?->get($key);
+        if ($this->redis !== null) {
+            return $this->redis?->get($key);
         }
         return null;
     }
@@ -113,12 +114,12 @@ class SimpleRedis
      */
     public function set(string $key, $value, int $time = 0): bool
     {
-        if (self::$redis !== null) {
+        if ($this->redis !== null) {
             if ($time > 0) {
-                self::$redis?->setex($key, $time, $value); //seg
-                //return self::$redis->psetex($key, $time, $value);//ms
+                $this->redis?->setex($key, $time, $value); //seg
+                //return $this->redis->psetex($key, $time, $value);//ms
             } else {
-                self::$redis?->set($key, $value);
+                $this->redis?->set($key, $value);
             }
             return true;
         }
@@ -133,8 +134,8 @@ class SimpleRedis
      */
     public function del(string $key): bool
     {
-        if (self::$redis !== null) {
-            self::$redis?->del($key);
+        if ($this->redis !== null) {
+            $this->redis?->del($key);
             return true;
         }
         return false;
@@ -149,8 +150,8 @@ class SimpleRedis
      */
     public function pub(string $channel, string $message): int|false
     {
-        if (self::$redis !== null) {
-            return self::$redis?->publish($channel, $message);
+        if ($this->redis !== null) {
+            return $this->redis?->publish($channel, $message);
         }
         return false;
     }
@@ -164,7 +165,7 @@ class SimpleRedis
      */
     public function sub(string $channel, callable $callback): ?array
     {
-        if (self::$redis !== null) {
+        if ($this->redis !== null) {
             return [$channel => $this->callbacks[$channel] = $callback];
         }
         return null;
@@ -178,11 +179,14 @@ class SimpleRedis
      */
     public function waitCallbacks(int $sleep = 0): bool
     {
-        if (self::$redis !== null) {
-            $this->pubsub = self::$redis->pubSubLoop();
+        if ($this->redis !== null) {
+            $this->pubsub = $this->redis->pubSubLoop();
             $this->callbacks["channel_break"] = function () {};
             $this->pubsub->subscribe(array_keys($this->callbacks));
             foreach ($this->pubsub as $message) {
+                if ($message === null || !is_object($message)) {
+                    continue;
+                }
                 if ($this->debug) {
                     echo  "Kind: ", $message->kind, " | Channel: ", $message->channel, " | Payload: ", $message->payload, PHP_EOL;
                 }
@@ -230,11 +234,11 @@ class SimpleRedis
     public function listPush(string $list, mixed $message, string $mode = "l"): bool
     {
         $mode = $this->listMode($mode);
-        if (self::$redis !== null && $mode !== null) {
+        if ($this->redis !== null && $mode !== null) {
             if ($mode === "l") {
-                self::$redis?->lpush($list, $message);
+                $this->redis?->lpush($list, $message);
             } else if ($mode === "r") {
-                self::$redis?->rpush($list, $message);
+                $this->redis?->rpush($list, $message);
             }
             return true;
         }
@@ -251,11 +255,11 @@ class SimpleRedis
     public function listPop(string $list, string $mode = "l"): mixed
     {
         $mode = $this->listMode($mode);
-        if (self::$redis !== null && $mode !== null) {
+        if ($this->redis !== null && $mode !== null) {
             if ($mode === "l") {
-                return self::$redis?->lpop($list);
+                return $this->redis?->lpop($list);
             } else if ($mode === "r") {
-                return self::$redis?->rpop($list);
+                return $this->redis?->rpop($list);
             }
         }
         return null;
@@ -269,8 +273,8 @@ class SimpleRedis
      */
     public function listSize(string $list): int
     {
-        if (self::$redis !== null) {
-            return self::$redis?->llen($list) ?? -1;
+        if ($this->redis !== null) {
+            return $this->redis?->llen($list) ?? -1;
         }
         return -1;
     }
@@ -284,8 +288,8 @@ class SimpleRedis
      */
     public function listIndex(string $list, int $index): mixed
     {
-        if (self::$redis !== null) {
-            return self::$redis?->lindex($list, $index);
+        if ($this->redis !== null) {
+            return $this->redis?->lindex($list, $index);
         }
         return null;
     }
@@ -302,8 +306,8 @@ class SimpleRedis
     public function listRange(string $list, int $start = 0, int $stop = -1, bool $reverse = true): array
     {
         $array = [];
-        if (self::$redis !== null) {
-            $array = self::$redis?->lrange($list, $start, $stop) ?? [];
+        if ($this->redis !== null) {
+            $array = $this->redis?->lrange($list, $start, $stop) ?? [];
         }
         return $reverse ? array_reverse($array) : $array;
     }
@@ -317,7 +321,7 @@ class SimpleRedis
      */
     public function listAll(string $list, bool $reverse = true): array
     {
-        if (self::$redis !== null) {
+        if ($this->redis !== null) {
             return $this->listRange($list, 0, -1, $reverse);
         }
         return [];
@@ -333,8 +337,8 @@ class SimpleRedis
      */
     public function listTrim(string $list, int $start, int $stop): bool
     {
-        if (self::$redis !== null) {
-            self::$redis?->ltrim($list, $start, $stop);
+        if ($this->redis !== null) {
+            $this->redis?->ltrim($list, $start, $stop);
             return true;
         }
         return false;
@@ -350,8 +354,8 @@ class SimpleRedis
      */
     public function listRemove(string $list, mixed $value, int $count = 0): int
     {
-        if (self::$redis !== null) {
-            return self::$redis?->lrem($list, $count, $value) ?? 0;
+        if ($this->redis !== null) {
+            return $this->redis?->lrem($list, $count, $value) ?? 0;
         }
         return 0;
     }
@@ -366,8 +370,8 @@ class SimpleRedis
      */
     public function listSet(string $list, int $index, mixed $value): bool
     {
-        if (self::$redis !== null) {
-            self::$redis?->lset($list, $index, $value);
+        if ($this->redis !== null) {
+            $this->redis?->lset($list, $index, $value);
             return true;
         }
         return false;
