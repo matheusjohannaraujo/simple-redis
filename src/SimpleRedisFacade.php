@@ -21,7 +21,6 @@ class SimpleRedisFacade
         if (is_null(self::$instance)) {
             $reflection = new \ReflectionClass(SimpleRedis::class);
             self::$instance = $reflection->newInstanceArgs($args);
-            self::$instance->config();
             self::$instance->open();
         }
     }
@@ -29,7 +28,7 @@ class SimpleRedisFacade
     protected static function getInstance(): SimpleRedis
     {
         if (is_null(self::$instance)) {
-            throw new \Exception("RedisFacade not initialized. Use RedisFacade::init([...]) first.");
+            throw new \Exception("SimpleRedisFacade not initialized. Use SimpleRedisFacade::init([...]) first.");
         }
 
         return self::$instance;

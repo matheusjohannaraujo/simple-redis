@@ -39,7 +39,7 @@ class SimpleRedis
      * @param int $read_write_timeout
      * @return void
      */
-    public function config(string $host = "localhost", int $port = 6379, string $password = "password", string $username = "", string $scheme = "tcp", int $read_write_timeout = 0): void
+    public function __construct(string $host = "localhost", int $port = 6379, string $password = "password", string $username = "", string $scheme = "tcp", int $read_write_timeout = 0)
     {
         $this->host = $host;
         $this->port = $port;

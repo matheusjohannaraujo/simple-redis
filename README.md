@@ -36,7 +36,6 @@ use MJohann\Packlib\SimpleRedis;
 
 // Create and configure a Redis connection
 $redis = new SimpleRedis();
-$redis->config();
 $redis->open();
 
 // SET: Store the key "key" with the value "value" and a TTL (Time To Live) of 60 seconds
