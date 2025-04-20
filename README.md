@@ -144,6 +144,8 @@ For more examples, see the [`example/`](example/) file in the repository.
 simple-redis/
 ├── src/
 │   └── SimpleRedis.php
+│   └── Facades/
+│       └── SimpleRedis.php
 ├── example/
 │   └── docker-compose.yml
 │   └── script.php
