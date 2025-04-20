@@ -1,8 +1,8 @@
 <?php
 
-require_once "../vendor/autoload.php";
-
 use MJohann\Packlib\SimpleRedis;
+
+require_once "../vendor/autoload.php";
 
 // Create and configure a Redis connection
 $redis = new SimpleRedis();

@@ -5,7 +5,7 @@
 	Country: Brasil
 	State: Pernambuco
 	Developer: Matheus Johann Araujo
-	Date: 2025-04-19
+	Date: 2025-04-20
 */
 
 namespace MJohann\Packlib;
@@ -29,14 +29,15 @@ class SimpleRedis
     public bool $debug = false;
 
     /**
-     * Configures Redis connection parameters.
+     * Initializes a new Redis connection configuration.
      *
-     * @param string $host
-     * @param int $port
-     * @param string $password
-     * @param string $username
-     * @param string $scheme
-     * @param int $read_write_timeout
+     * @param string $host Redis server hostname or IP address (default: "localhost")
+     * @param int $port Redis server port number (default: 6379)
+     * @param string $password Password used for authentication (default: "password")
+     * @param string $username Username used for authentication, if applicable (default: "")
+     * @param string $scheme Connection scheme, e.g., "tcp" or "unix" (default: "tcp")
+     * @param int $read_write_timeout Timeout in seconds for read/write operations (default: 0, which means no timeout)
+     *
      * @return void
      */
     public function __construct(string $host = "localhost", int $port = 6379, string $password = "password", string $username = "", string $scheme = "tcp", int $read_write_timeout = 0)

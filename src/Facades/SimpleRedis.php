@@ -5,30 +5,43 @@
 	Country: Brasil
 	State: Pernambuco
 	Developer: Matheus Johann Araujo
-	Date: 2025-04-19
+	Date: 2025-04-20
 */
 
-namespace MJohann\Packlib;
+namespace MJohann\Packlib\Facades;
 
-use MJohann\Packlib\SimpleRedis;
+use MJohann\Packlib\SimpleRedis as SimpleRedisClass;
 
-class SimpleRedisFacade
+class SimpleRedis
 {
-    protected static ?SimpleRedis $instance = null;
+    protected static ?SimpleRedisClass $instance = null;
 
+    /**
+     * Configures Redis connection parameters.
+     *
+     * @param array{
+     *     host: string,
+     *     port: int,
+     *     password: string,
+     *     username: string,
+     *     scheme: string,
+     *     read_write_timeout: int
+     * } $args
+     * @return void
+     */
     public static function init(array $args = []): void
     {
         if (is_null(self::$instance)) {
-            $reflection = new \ReflectionClass(SimpleRedis::class);
+            $reflection = new \ReflectionClass(SimpleRedisClass::class);
             self::$instance = $reflection->newInstanceArgs($args);
             self::$instance->open();
         }
     }
 
-    protected static function getInstance(): SimpleRedis
+    protected static function getInstance(): SimpleRedisClass
     {
         if (is_null(self::$instance)) {
-            throw new \Exception("SimpleRedisFacade not initialized. Use SimpleRedisFacade::init([...]) first.");
+            throw new \Exception("Facade not initialized. Use \MJohann\Packlib\Facades\SimpleRedis::init([...]) first.");
         }
 
         return self::$instance;
