@@ -16,7 +16,7 @@ use MJohann\Packlib\SimpleRedis as SimpleRedisClass;
  * Facade for the SimpleRedis providing static access to Redis operations.
  *
  * @method static void init(string $host = "localhost", int $port = 6379, string $password = "password", string $username = "", string $scheme = "tcp", int $read_write_timeout = 0) Initializes a new Redis connection.
- * @method static SimpleRedisClass getInstance() Retrieves the current Redis connection instance.
+ * @method static SimpleRedis getInstance() Retrieves the current Redis connection instance.
  * @method static mixed __callStatic(string $method, array $arguments) Dynamically calls a method on the SimpleRedis instance.
  */
 class SimpleRedis
